@@ -1,0 +1,22 @@
+services:
+  vrcx:
+    image: ghcr.io/YOUR_GITHUB_USERNAME/vrcx-docker:latest
+    container_name: vrcx
+    restart: unless-stopped
+    shm_size: "1gb"
+    environment:
+      - VNC_PW=changeme
+      - TZ=Europe/Berlin
+    ports:
+      - "6901:6901"
+    volumes:
+      - vrcx-config:/home/kasm-user/.config/VRCX
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6901' || exit 1"]
+      interval: 1m
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  vrcx-config:
