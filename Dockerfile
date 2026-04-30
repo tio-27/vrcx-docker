@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---------- Stage 1: Build VRCX from source ----------
-FROM mcr.microsoft.com/dotnet/sdk:9.0-jammy AS builder
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS builder
 
 ARG VRCX_REF=master
 
