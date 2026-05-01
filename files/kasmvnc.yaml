@@ -1,21 +1,16 @@
-# KasmVNC system-level configuration
-# Default resolution: 1920x1080
-# Can be overridden at runtime via env vars in docker-compose:
-#   KASMVNC_DESKTOP_RESOLUTION_WIDTH=2560
-#   KASMVNC_DESKTOP_RESOLUTION_HEIGHT=1440
-#   KASMVNC_ENCODING_MAX_FRAME_RATE=60
+# User-level KasmVNC config override (~/.vnc/kasmvnc.yaml)
+# Explicitly sets cert paths to ~/.vnc/self.pem (Kasm generates this on first boot)
+# to avoid default snakeoil paths that don't exist in this image
 desktop:
   resolution:
     width: 1920
     height: 1080
   allow_resize: true
-  pixel_depth: 24
+network:
+  ssl:
+    pem_certificate: ${HOME}/.vnc/self.pem
+    pem_key: ${HOME}/.vnc/self.pem
 encoding:
   max_frame_rate: 30
-network:
-  protocol: http
-  interface: 0.0.0.0
-  use_ipv4: true
-  use_ipv6: true
 runtime_configuration:
   allow_client_to_override_kasm_server_settings: true

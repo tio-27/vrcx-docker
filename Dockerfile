@@ -81,17 +81,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /opt/vrcx-extracted /opt/vrcx
 RUN chmod +x /opt/vrcx/vrcx
 
-# Desktop entry, autostart script, KasmVNC config
+# Desktop entry, autostart script, KasmVNC user config
 COPY files/vrcx.desktop /usr/share/applications/vrcx.desktop
 COPY files/custom_startup.sh $STARTUPDIR/custom_startup.sh
-COPY files/kasmvnc.yaml /etc/kasmvnc/kasmvnc.yaml
+COPY files/kasmvnc.yaml $HOME/.vnc/kasmvnc.yaml
 
 RUN mkdir -p $HOME/Desktop \
     && cp /usr/share/applications/vrcx.desktop $HOME/Desktop/vrcx.desktop \
     && chmod +x $HOME/Desktop/vrcx.desktop \
     && chmod +x $STARTUPDIR/custom_startup.sh \
-    && chmod 644 /etc/kasmvnc/kasmvnc.yaml \
-    && chown 1000:1000 $HOME/Desktop/vrcx.desktop $STARTUPDIR/custom_startup.sh /etc/kasmvnc/kasmvnc.yaml
+    && chmod 644 $HOME/.vnc/kasmvnc.yaml \
+    && chown 1000:1000 $HOME/Desktop/vrcx.desktop $STARTUPDIR/custom_startup.sh $HOME/.vnc/kasmvnc.yaml
 
 # Persistent VRCX config directory
 RUN mkdir -p $HOME/.config/VRCX \
