@@ -48,15 +48,15 @@ RUN UNPACKED=$(find build/ -maxdepth 2 -type d -name "linux-unpacked" | head -n1
 FROM lscr.io/linuxserver/webtop:ubuntu-xfce
 
 # .NET 9 runtime + Electron deps
-# webtop:ubuntu-xfce is based on Ubuntu Jammy (22.04)
+# webtop:ubuntu-xfce is based on Ubuntu Noble (24.04) via baseimage-selkies:ubuntunoble
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgbm1 libnss3 libasound2 libatk1.0-0 libatk-bridge2.0-0 \
-        libcups2 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
+        libgbm1 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 \
+        libcups2t64 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
         libxkbcommon0 libxrandr2 libxshmfence1 libnspr4 libdbus-1-3 \
         libexpat1 libxcb1 libx11-6 libxext6 libxtst6 libxi6 \
-        libpangocairo-1.0-0 libgtk-3-0 libnotify4 libsecret-1-0 \
+        libpangocairo-1.0-0 libgtk-3-0t64 libnotify4 libsecret-1-0 \
         wget ca-certificates procps \
-    && wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O /tmp/ms.deb \
+    && wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O /tmp/ms.deb \
     && dpkg -i /tmp/ms.deb && rm /tmp/ms.deb \
     && apt-get update \
     && apt-get install -y --no-install-recommends dotnet-runtime-9.0 \
