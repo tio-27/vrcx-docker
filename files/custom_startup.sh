@@ -1,10 +1,8 @@
 #!/bin/bash
 # Watchdog for VRCX
-# - Cleans up stale singleton locks before each launch
-# - Waits for the FULL VRCX process tree to exit before restarting
-#   (Electron self-relaunches on startup; without this the watchdog
-#    would race the relaunched process and cause a "Another instance
-#    is already running" loop)
+# Runs in foreground - vnc_startup.sh tracks this as a service, so we must
+# NOT exit prematurely (otherwise Kasm tries to kill PID we don't own anymore
+# and logs "Unknown Service: custom_startup")
 
 set -u
 
@@ -29,20 +27,19 @@ wait_for_all_vrcx_gone() {
 
 /usr/bin/desktop_ready
 
-(
-  while true; do
-    cleanup_locks
+# Watchdog loop in foreground - blocks until container stops
+while true; do
+  cleanup_locks
 
-    /opt/vrcx/vrcx "${VRCX_FLAGS[@]}" >> /tmp/vrcx.log 2>&1 &
-    INITIAL_PID=$!
+  /opt/vrcx/vrcx "${VRCX_FLAGS[@]}" >> /tmp/vrcx.log 2>&1 &
+  INITIAL_PID=$!
 
-    wait $INITIAL_PID 2>/dev/null
-    EXIT_CODE=$?
+  wait $INITIAL_PID 2>/dev/null
+  EXIT_CODE=$?
 
-    sleep 3
-    wait_for_all_vrcx_gone
+  sleep 3
+  wait_for_all_vrcx_gone
 
-    echo "[$(date -Iseconds)] All VRCX processes exited (initial code $EXIT_CODE), restarting in 5s..." >> /tmp/vrcx.log
-    sleep 5
-  done
-) &
+  echo "[$(date -Iseconds)] All VRCX processes exited (initial code $EXIT_CODE), restarting in 5s..." >> /tmp/vrcx.log
+  sleep 5
+done
