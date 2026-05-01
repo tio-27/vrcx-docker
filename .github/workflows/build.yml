@@ -14,6 +14,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   check-and-build:
@@ -56,7 +57,6 @@ jobs:
             exit 0
           fi
 
-          # Anonymous read for public packages, fallback to authenticated check
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Accept: application/vnd.docker.distribution.manifest.v2+json" \
             -H "Authorization: Bearer ${GH_TOKEN}" \

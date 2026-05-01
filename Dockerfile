@@ -5,7 +5,6 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS builder
 
 ARG VRCX_REF=master
 
-# AppImage extract workaround: no FUSE in Docker, set env so electron-builder skips AppImage finalization
 ENV USE_SYSTEM_FPM=true \
     APPIMAGE_EXTRACT_AND_RUN=1
 
@@ -24,7 +23,7 @@ WORKDIR /build
 RUN git clone https://github.com/vrcx-team/VRCX.git . \
     && git checkout "${VRCX_REF}"
 
-# Build order per official wiki: dotnet first, then npm
+# Build order per official VRCX wiki: dotnet first, then npm
 RUN dotnet build 'Dotnet/VRCX-Electron.csproj' \
         -p:Configuration=Release \
         -p:WarningLevel=0 \
@@ -37,9 +36,8 @@ RUN dotnet build 'Dotnet/VRCX-Electron.csproj' \
 RUN npm install --arch=x64
 RUN npm run prod-linux --arch=x64
 
-# electron-builder with --dir target produces unpacked tree directly (no FUSE/AppImage step)
-# Replicate npm run build-electron + postbuild-electron sequence
-# rename-builds.js may fail with --dir (expects AppImage artifact) - tolerate via || true
+# electron-builder --dir: produces unpacked tree (no AppImage, no FUSE issue)
+# Replicates npm run build-electron + postbuild-electron sequence
 RUN node ./src-electron/patch-package-version.js \
     && ./node_modules/.bin/electron-builder --linux dir --x64 --publish never \
     && node ./src-electron/patch-node-api-dotnet.js \
@@ -72,7 +70,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxkbcommon0 libxrandr2 libxshmfence1 libnspr4 libdbus-1-3 \
         libexpat1 libxcb1 libx11-6 libxext6 libxtst6 libxi6 \
         libpangocairo-1.0-0 libgtk-3-0 libnotify4 libsecret-1-0 \
-        tzdata wget ca-certificates \
+        tzdata wget ca-certificates procps \
     && wget -q https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O /tmp/ms.deb \
     && dpkg -i /tmp/ms.deb && rm /tmp/ms.deb \
     && apt-get update \
@@ -83,15 +81,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /opt/vrcx-extracted /opt/vrcx
 RUN chmod +x /opt/vrcx/vrcx
 
-# Desktop entry + autostart script (BuildKit-native COPY heredoc would also work, but external files are more maintainable)
+# Desktop entry, autostart script, KasmVNC config
 COPY files/vrcx.desktop /usr/share/applications/vrcx.desktop
 COPY files/custom_startup.sh $STARTUPDIR/custom_startup.sh
+COPY files/kasmvnc.yaml /etc/kasmvnc/kasmvnc.yaml
 
 RUN mkdir -p $HOME/Desktop \
     && cp /usr/share/applications/vrcx.desktop $HOME/Desktop/vrcx.desktop \
     && chmod +x $HOME/Desktop/vrcx.desktop \
     && chmod +x $STARTUPDIR/custom_startup.sh \
-    && chown 1000:1000 $HOME/Desktop/vrcx.desktop $STARTUPDIR/custom_startup.sh
+    && chmod 644 /etc/kasmvnc/kasmvnc.yaml \
+    && chown 1000:1000 $HOME/Desktop/vrcx.desktop $STARTUPDIR/custom_startup.sh /etc/kasmvnc/kasmvnc.yaml
 
 # Persistent VRCX config directory
 RUN mkdir -p $HOME/.config/VRCX \
