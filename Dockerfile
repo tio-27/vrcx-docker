@@ -69,7 +69,7 @@ RUN chmod +x /opt/vrcx/vrcx
 # Desktop entry for menu/launcher
 COPY files/vrcx.desktop /usr/share/applications/vrcx.desktop
 
-# XFCE autostart entry
-COPY files/vrcx-autostart.desktop /defaults/autostart/vrcx.desktop
-COPY files/vrcx-launcher.sh /usr/local/bin/vrcx-launcher
-RUN chmod +x /usr/local/bin/vrcx-launcher
+# Webtop's /defaults/autostart is a single executable file (not a dir)
+# It's run on container start as the main application launcher
+COPY files/vrcx-launcher.sh /defaults/autostart
+RUN chmod +x /defaults/autostart

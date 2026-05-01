@@ -1,8 +1,7 @@
 #!/bin/bash
-# VRCX launcher with watchdog
-# - Cleans stale singleton locks
-# - Restarts VRCX if it exits (memory leak workaround for VRCX issue #1647)
-# - Waits for full process tree to be gone before restart (avoids "Another instance" loop)
+# Webtop autostart launcher (placed at /defaults/autostart)
+# Webtop runs this on container start. It must wait for the display server
+# to be ready, then keep VRCX alive with a watchdog loop.
 
 set -u
 
@@ -27,6 +26,14 @@ wait_for_vrcx_gone() {
     sleep 2
   done
 }
+
+# Wait for display server (Selkies/X11)
+for i in $(seq 1 60); do
+  if [ -n "${DISPLAY:-}" ] && xset q >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
 
 while true; do
   cleanup_locks
