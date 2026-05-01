@@ -5,23 +5,30 @@ services:
     hostname: vrcx
     restart: unless-stopped
     shm_size: "1gb"
+    security_opt:
+      - seccomp:unconfined
     environment:
-      - VNC_PW=password
+      - PUID=1000
+      - PGID=1000
       - TZ=Europe/Berlin
-      # Auflösung overriden (Default im Image: 1920x1080)
-      # - KASMVNC_DESKTOP_RESOLUTION_WIDTH=2560
-      # - KASMVNC_DESKTOP_RESOLUTION_HEIGHT=1440
-      # - KASMVNC_ENCODING_MAX_FRAME_RATE=60
+      - TITLE=VRCX
+      # Auth deaktiviert (LAN-only) - PASSWORD nicht setzen
+      # - CUSTOM_USER=admin
+      # - PASSWORD=changeme
+      # Resolution Override (optional, default ist client-resizing)
+      # - SELKIES_MANUAL_WIDTH=1920
+      # - SELKIES_MANUAL_HEIGHT=1080
     ports:
-      - "6901:6901"
+      - "3000:3000"   # HTTP - kein Cert-Theater mehr
+      # - "3001:3001" # HTTPS, brauchen wir nicht
     volumes:
-      - /mnt/nvme/docker/vrcx:/home/kasm-user/.config/VRCX
+      - /mnt/nvme/docker/vrcx:/config
     deploy:
       resources:
         limits:
           memory: 4G
     healthcheck:
-      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/6901' || exit 1"]
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/3000' || exit 1"]
       interval: 1m
       timeout: 5s
       retries: 3

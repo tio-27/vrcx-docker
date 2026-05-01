@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=VRCX
+Comment=Auto-start VRCX with watchdog
+Exec=/usr/local/bin/vrcx-launcher
+Icon=/opt/vrcx/resources/VRCX.png
+Terminal=false
+Type=Application
+X-GNOME-Autostart-enabled=true
+StartupNotify=false
