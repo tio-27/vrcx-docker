@@ -44,12 +44,11 @@ RUN UNPACKED=$(find build/ -maxdepth 2 -type d -name "linux-unpacked" | head -n1
     && [ -n "$UNPACKED" ] || (echo "linux-unpacked dir not found"; ls -la build/; exit 1) \
     && mv "$UNPACKED" /opt/vrcx-extracted
 
-# ---------- Stage 2: Webtop runtime (Selkies-based, WebRTC) ----------
-FROM lscr.io/linuxserver/webtop:ubuntu-xfce
+# ---------- Stage 2: Selkies single-app runtime ----------
+FROM ghcr.io/linuxserver/baseimage-selkies:ubuntunoble
 
-# .NET 9 runtime + Electron deps
-# webtop:ubuntu-xfce is based on Ubuntu Noble (24.04)
-# .NET 9 on Noble comes from Canonical's backports PPA (Microsoft no longer publishes for 24.04+)
+# .NET 9 + Electron deps
+# Noble doesn't ship .NET 9 directly - using Canonical's backports PPA
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgbm1 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 \
         libcups2t64 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
@@ -66,10 +65,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /opt/vrcx-extracted /opt/vrcx
 RUN chmod +x /opt/vrcx/vrcx
 
-# Desktop entry for menu/launcher
-COPY files/vrcx.desktop /usr/share/applications/vrcx.desktop
-
-# Webtop's /defaults/autostart is a single executable file (not a dir)
-# It's run on container start as the main application launcher
+# Single-app autostart - launched by Openbox after init
 COPY files/vrcx-launcher.sh /defaults/autostart
 RUN chmod +x /defaults/autostart

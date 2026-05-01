@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=VRCX
-Comment=Friendship management tool for VRChat
-Exec=/opt/vrcx/vrcx --no-sandbox --disable-gpu --disable-software-rasterizer --disable-dev-shm-usage --no-updater
-Icon=/opt/vrcx/resources/VRCX.png
-Terminal=false
-Type=Application
-Categories=Utility;

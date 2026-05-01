@@ -12,15 +12,15 @@ services:
       - PGID=1000
       - TZ=Europe/Berlin
       - TITLE=VRCX
-      # Auth deaktiviert (LAN-only) - PASSWORD nicht setzen
+      - NO_DECOR=true
+      # Auth deaktiviert (LAN) - keine PASSWORD setzen
       # - CUSTOM_USER=admin
       # - PASSWORD=changeme
-      # Resolution Override (optional, default ist client-resizing)
+      # Resolution Override (optional)
       # - SELKIES_MANUAL_WIDTH=1920
       # - SELKIES_MANUAL_HEIGHT=1080
     ports:
-      - "3000:3000"   # HTTP - kein Cert-Theater mehr
-      # - "3001:3001" # HTTPS, brauchen wir nicht
+      - "3000:3000"
     volumes:
       - /mnt/nvme/docker/vrcx:/config
     deploy:

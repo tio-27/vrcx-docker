@@ -1,30 +1,26 @@
 # vrcx-docker
 
-VRCX in einem Docker-Container, basierend auf **linuxserver/webtop** (Selkies/WebRTC).
+VRCX als Single-Application Docker-Container, basierend auf **`linuxserver/baseimage-selkies`** (Selkies/WebRTC).
 Build from source via GitHub Actions, täglich auf neue VRCX-Releases geprüft.
-
----
 
 ## Architektur
 
-- **Multi-Stage Build:** dotnet-SDK-Container baut VRCX, Webtop-Image bekommt nur die fertigen Files
-- **Base-Image:** `lscr.io/linuxserver/webtop:ubuntu-xfce` mit Selkies (WebRTC statt KasmVNC-WebSocket — VRCX/Electron läuft damit zuverlässiger)
-- **HTTP statt HTTPS:** Port 3000, kein Cert-Self-Signed-Theater mehr
-- **Keine Auth-Pflicht:** `PASSWORD` ENV nicht gesetzt = direkter Zugriff (LAN-only)
-- **VRCX-Autostart:** XFCE startet VRCX über `~/.config/autostart/vrcx.desktop` mit eigenem Watchdog
-- **Watchdog:** Lock-Cleanup vor jedem Start + Process-Tree-Wait gegen den Electron-Self-Relaunch-Loop
-- **GHCR-Tag-Check:** Workflow fragt direkt das GHCR-Manifest ab statt Git-State-Tracking
-- **Persistent Volume:** `/config` (statt `/home/kasm-user/.config/VRCX` wie bei Kasm)
-
----
+- **Multi-Stage Build:** dotnet-SDK-Container baut VRCX, Selkies-Image bekommt nur die fertigen Binaries
+- **Base-Image:** `ghcr.io/linuxserver/baseimage-selkies:ubuntunoble` mit Openbox als minimaler Window Manager
+- **Single-Application Mode:** kein XFCE, kein Multi-Session-Quark — Openbox rendert nur VRCX im Vollbild
+- **WebRTC statt VNC:** Selkies-Streaming, Login-Probleme aus KasmVNC umgangen
+- **HTTP statt HTTPS:** Port 3000, kein Cert-Theater
+- **Keine Auth:** `PASSWORD` ENV nicht gesetzt = direkter Zugriff (LAN)
+- **`/defaults/autostart`:** Webtop-Konvention für Single-App-Launcher mit Watchdog
+- **GHCR-Tag-Check:** Workflow fragt direkt das GHCR-Manifest ab
 
 ## Setup
 
-### 1. GitHub-Repo anlegen
+### 1. GitHub-Repo
 
-GitHub → New repository → `vrcx-docker` (public empfohlen).
+`vrcx-docker` als public repo anlegen (Actions unlimited bei Public).
 
-### 2. Dateien hochladen (Git CLI)
+### 2. Files hochladen
 
 ```bash
 cd ~/Downloads/vrcx-docker
@@ -34,39 +30,33 @@ git remote add origin https://github.com/DEIN_USERNAME/vrcx-docker.git
 git push -u origin main
 ```
 
-GitHub fragt nach Username + **Personal Access Token** (Settings → Developer settings → Tokens classic, Scope `repo`).
-
 ### 3. Actions-Permissions
 
-Repo → Settings → Actions → General → Workflow permissions → **Read and write permissions** → Save.
+Repo → Settings → Actions → General → Workflow permissions → **Read and write** → Save.
 
-### 4. Ersten Build triggern
+### 4. Build triggern
 
 Repo → Actions → Build VRCX Docker Image → Run workflow → `force_rebuild: true`.
-Buildzeit: 15–25 Minuten.
+Buildzeit: 15–25 min.
 
-### 5. Image visibility
+### 5. Image public machen
 
 Profile → Packages → vrcx-docker → Package settings → Public.
 
-### 6. Deployment
+### 6. TrueNAS Deployment
 
-Volume vorbereiten:
 ```bash
 mkdir -p /mnt/nvme/docker/vrcx
 chown 1000:1000 /mnt/nvme/docker/vrcx
 ```
 
-`docker-compose.yml` anpassen — `YOUR_GITHUB_USERNAME` durch lowercase Username ersetzen.
+`docker-compose.yml` anpassen — `YOUR_GITHUB_USERNAME` durch deinen lowercase Username ersetzen.
 
 ```bash
 docker compose up -d
 ```
 
-VRCX erreichbar unter: `http://TRUENAS_IP:3000` (HTTP, kein Cert).
-**Keine Anmeldung nötig** — kommt direkt auf den Desktop, VRCX startet automatisch.
-
----
+VRCX im Browser: `http://TRUENAS_IP:3000`. Keine Anmeldung — kommt direkt zu VRCX.
 
 ## Konfiguration
 
@@ -74,80 +64,78 @@ VRCX erreichbar unter: `http://TRUENAS_IP:3000` (HTTP, kein Cert).
 
 | ENV | Default | Zweck |
 |-----|---------|-------|
-| `PUID` | `1000` | User-ID für File-Ownership |
+| `PUID` | `1000` | User-ID |
 | `PGID` | `1000` | Group-ID |
 | `TZ` | `Etc/UTC` | Timezone |
 | `TITLE` | `Selkies` | Browser-Tab-Titel |
-| `CUSTOM_USER` | `abc` | HTTP-Basic-Auth User (nur wenn PASSWORD gesetzt) |
-| `PASSWORD` | unset | HTTP-Basic-Auth Password — **wenn unset, keine Auth!** |
-| `SELKIES_MANUAL_WIDTH` | unset | Lock auf feste Breite (sonst dynamisch nach Browser-Größe) |
-| `SELKIES_MANUAL_HEIGHT` | unset | Lock auf feste Höhe |
+| `NO_DECOR` | `true` | Fenster-Dekorationen aus (PWA-Style) |
+| `CUSTOM_USER` | `abc` | Auth-User (nur wenn PASSWORD gesetzt) |
+| `PASSWORD` | unset | Auth-Password — wenn unset = keine Auth |
+| `SELKIES_MANUAL_WIDTH` | unset | Feste Breite (sonst dynamisch) |
+| `SELKIES_MANUAL_HEIGHT` | unset | Feste Höhe |
+| `MAX_RES` | `15360x8640` | Max-Resolution für Xvfb |
 
 ### Volume
 
-| Pfad im Container | Inhalt |
+| Pfad | Inhalt |
 |---|---|
-| `/config` | XFCE-Profile, VRCX-Settings, SQLite-DB, Logs — alles persistent |
+| `/config` | Home-Dir des `abc` Users — VRCX-DB, Settings, Logs persistent |
 
-VRChat-Login-Token bleibt persistent über Updates und Restarts.
-
----
+VRChat-Login bleibt persistent über Updates und Restarts.
 
 ## Updates
 
-Workflow läuft täglich 06:00 UTC, prüft via GitHub API auf neue VRCX-Releases.
+Workflow läuft täglich 06:00 UTC. Neue VRCX-Releases werden automatisch gebaut.
 
-Auf TrueNAS:
 ```bash
 docker compose pull && docker compose up -d
 ```
 
-Force-Rebuild manuell: Actions → Run workflow → `force_rebuild: true`.
-
----
+Force-Rebuild: Actions → Run workflow → `force_rebuild: true`.
+Spezifische Version: `vrcx_version: v2026.01.28`.
 
 ## Bekannte Einschränkungen
 
 - **Memory Leak** (VRCX Issue #1647): Watchdog im Launcher restartet bei Crash
-- `--disable-gpu` ist gesetzt — kein Hardware-Rendering
+- `--disable-gpu` — kein Hardware-Rendering
 - `shm_size: 1gb` Pflicht für Chromium/Electron
-- Kein VR-Overlay, läuft headless
-- `--no-updater` verhindert In-App-Updates (Updates kommen über GHCR-Pull)
-
----
+- Headless, kein VR-Overlay
+- `--no-updater` — In-App-Updates aus, Updates über GHCR-Pull
 
 ## Troubleshooting
 
-**`docker pull` failed mit "denied":**
+**Image pull failed mit "denied":**
 Image private. Public machen oder lokal authentifizieren:
 ```bash
 echo "DEIN_PAT" | docker login ghcr.io -u DEIN_USERNAME --password-stdin
 ```
 
-**VRCX startet nicht / crasht im Loop:**
+**VRCX startet nicht oder crasht:**
 ```bash
 docker exec -it vrcx bash
 cat /config/.config/VRCX/launcher.log
 ps aux | grep vrcx
 ```
 
-**Browser zeigt nichts unter `http://IP:3000`:**
-- HTTP statt HTTPS verwenden
-- Port 3000 (nicht 6901)
-- Falls Authentifizierung kommt: `PASSWORD` ist gesetzt im Compose, oder leer lassen
+**Login-Button reagiert nicht:**
+Volume frisch:
+```bash
+docker compose down
+rm -rf /mnt/nvme/docker/vrcx/*
+chown 1000:1000 /mnt/nvme/docker/vrcx
+docker compose up -d
+```
 
-**Resolution ist zu klein:**
-Browser-Fenster maximieren — Selkies skaliert dynamisch mit. Für feste Auflösung: `SELKIES_MANUAL_WIDTH=1920` und `SELKIES_MANUAL_HEIGHT=1080` als ENV setzen.
-
-**Workflow läuft nicht:**
-Schedules pausieren bei niedriger Repo-Aktivität nach 60 Tagen — manueller Trigger reaktiviert.
-
----
+**Auflösung schlecht:**
+Browser-Fenster größer ziehen — Selkies skaliert dynamisch. Für feste Auflösung:
+```yaml
+- SELKIES_MANUAL_WIDTH=1920
+- SELKIES_MANUAL_HEIGHT=1080
+```
 
 ## Quellen
 
 - VRCX Build-from-source: https://github.com/vrcx-team/VRCX/wiki/Building-from-source
-- linuxserver/webtop: https://github.com/linuxserver/docker-webtop
-- linuxserver baseimage-selkies: https://github.com/linuxserver/docker-baseimage-selkies
-- Selkies framework: https://github.com/selkies-project
+- baseimage-selkies: https://github.com/linuxserver/docker-baseimage-selkies
+- Selkies Project: https://github.com/selkies-project
 - VRCX Memory Leak: https://github.com/vrcx-team/VRCX/issues/1647

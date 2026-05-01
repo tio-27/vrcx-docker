@@ -1,9 +1,11 @@
 #!/bin/bash
-# Webtop autostart launcher (placed at /defaults/autostart)
-# Webtop runs this on container start. It must wait for the display server
-# to be ready, then keep VRCX alive with a watchdog loop.
+# Single-app launcher for baseimage-selkies
+# Openbox runs this on container start. Must stay foreground - exiting kills the session.
 
 set -u
+
+# Clean shutdown on signals
+trap 'kill ${INITIAL_PID:-} 2>/dev/null; exit 0' SIGTERM SIGINT
 
 VRCX_FLAGS=(
   --no-sandbox
@@ -27,9 +29,9 @@ wait_for_vrcx_gone() {
   done
 }
 
-# Wait for display server (Selkies/X11)
+# Wait for X to be ready (DISPLAY env + X socket)
 for i in $(seq 1 60); do
-  if [ -n "${DISPLAY:-}" ] && xset q >/dev/null 2>&1; then
+  if [ -n "${DISPLAY:-}" ] && [ -S "/tmp/.X11-unix/X${DISPLAY#:}" ]; then
     break
   fi
   sleep 1
