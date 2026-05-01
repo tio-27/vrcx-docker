@@ -10,6 +10,11 @@ on:
         required: false
         default: false
         type: boolean
+      vrcx_version:
+        description: "Specific VRCX tag to build (leave empty for latest release)"
+        required: false
+        default: ""
+        type: string
 
 env:
   REGISTRY: ghcr.io
@@ -29,6 +34,12 @@ jobs:
       - name: Get latest VRCX release tag
         id: vrcx
         run: |
+          OVERRIDE="${{ github.event.inputs.vrcx_version }}"
+          if [ -n "$OVERRIDE" ]; then
+            echo "version=$OVERRIDE" >> $GITHUB_OUTPUT
+            echo "Using overridden VRCX version: $OVERRIDE"
+            exit 0
+          fi
           LATEST=$(curl -fsSL "https://api.github.com/repos/vrcx-team/VRCX/releases/latest" | jq -r '.tag_name')
           if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
             echo "::error::Failed to fetch VRCX release"
