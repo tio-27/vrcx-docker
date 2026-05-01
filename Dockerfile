@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1
 
 # ---------- Stage 1: Build VRCX from source ----------
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS builder
@@ -48,16 +48,16 @@ RUN UNPACKED=$(find build/ -maxdepth 2 -type d -name "linux-unpacked" | head -n1
 FROM lscr.io/linuxserver/webtop:ubuntu-xfce
 
 # .NET 9 runtime + Electron deps
-# webtop:ubuntu-xfce is based on Ubuntu Noble (24.04) via baseimage-selkies:ubuntunoble
+# webtop:ubuntu-xfce is based on Ubuntu Noble (24.04)
+# .NET 9 on Noble comes from Canonical's backports PPA (Microsoft no longer publishes for 24.04+)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgbm1 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 \
         libcups2t64 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
         libxkbcommon0 libxrandr2 libxshmfence1 libnspr4 libdbus-1-3 \
         libexpat1 libxcb1 libx11-6 libxext6 libxtst6 libxi6 \
         libpangocairo-1.0-0 libgtk-3-0t64 libnotify4 libsecret-1-0 \
-        wget ca-certificates procps \
-    && wget -q https://packages.microsoft.com/config/ubuntu/24.04/packages-microsoft-prod.deb -O /tmp/ms.deb \
-    && dpkg -i /tmp/ms.deb && rm /tmp/ms.deb \
+        ca-certificates software-properties-common procps \
+    && add-apt-repository -y ppa:dotnet/backports \
     && apt-get update \
     && apt-get install -y --no-install-recommends dotnet-runtime-9.0 \
     && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/*
@@ -69,8 +69,7 @@ RUN chmod +x /opt/vrcx/vrcx
 # Desktop entry for menu/launcher
 COPY files/vrcx.desktop /usr/share/applications/vrcx.desktop
 
-# XFCE autostart entry - copied to /defaults/ which Webtop syncs to ~/.config/autostart
-# on first user login. Has watchdog logic that respawns on crash.
+# XFCE autostart entry
 COPY files/vrcx-autostart.desktop /defaults/autostart/vrcx.desktop
 COPY files/vrcx-launcher.sh /usr/local/bin/vrcx-launcher
 RUN chmod +x /usr/local/bin/vrcx-launcher
