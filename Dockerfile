@@ -36,9 +36,12 @@ RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
         -t:"Restore;Clean;Build" \
         -m -a x64
 
-# 2. Reproducible npm install
+# 2. npm install
+#    Note: We use 'install' instead of 'ci' because VRCX upstream's package-lock.json
+#    is sometimes out of sync with package.json (e.g. missing transitive deps).
+#    'ci' fails strict, 'install' resolves on the fly.
 RUN --mount=type=cache,target=/root/.npm,sharing=locked \
-    npm ci --no-audit --no-fund
+    npm install --no-audit --no-fund
 
 # 3. Vite build of frontend + license bundle (npm run prod-linux includes both)
 RUN npm run prod-linux
