@@ -75,27 +75,17 @@ LABEL org.opencontainers.image.title="VRCX" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="${VRCX_REF}"
 
-# Electron runtime libs + .NET 9 fallback runtime
-# Note: VRCX bundles its own .NET 9 in app.asar.unpacked, but installing the
-# system runtime as fallback is harmless and helps if the bundled copy ever fails to load.
-# Microsoft no longer publishes .NET for Ubuntu Noble (24.04+) - only Canonical's PPA does.
-# We add the PPA manually (without add-apt-repository) to avoid launchpad.net API timeouts.
+# Electron runtime libs only.
+# .NET 9 runtime is bundled inside VRCX itself (see download-dotnet-runtime.js
+# in the builder stage). No need for a system-wide dotnet-runtime-9.0 package,
+# which avoids dealing with Canonical's flaky dotnet/backports PPA on Noble.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgbm1 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 \
         libcups2t64 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
         libxkbcommon0 libxrandr2 libxshmfence1 libnspr4 libdbus-1-3 \
         libexpat1 libxcb1 libx11-6 libxext6 libxtst6 libxi6 \
         libpangocairo-1.0-0 libgtk-3-0t64 libnotify4 libsecret-1-0 \
-        ca-certificates gnupg curl \
-    && install -d -m 0755 /etc/apt/keyrings \
-    && curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF" \
-        | gpg --dearmor -o /etc/apt/keyrings/dotnet-backports.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/dotnet-backports.gpg] https://ppa.launchpadcontent.net/dotnet/backports/ubuntu noble main" \
-        > /etc/apt/sources.list.d/dotnet-backports.list \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends dotnet-runtime-9.0 \
-    && apt-get purge -y gnupg curl \
-    && apt-get autoremove -y \
+        ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
