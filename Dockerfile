@@ -96,3 +96,8 @@ RUN chmod +x /opt/vrcx/vrcx
 # Single-app launcher - Openbox calls this after init in the user X session
 COPY files/vrcx-launcher.sh /defaults/autostart
 RUN chmod +x /defaults/autostart
+
+# Custom init - ensures /config/.config/openbox/autostart has exec bit on every boot.
+# LSIO's init-config copies /defaults/autostart to /config but loses the exec permission.
+COPY root/ /
+RUN chmod +x /custom-cont-init.d/10-fix-autostart.sh

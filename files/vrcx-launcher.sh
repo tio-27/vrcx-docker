@@ -1,8 +1,6 @@
-#!/bin/bash
-# /defaults/autostart - Openbox runs this in user X session after init
-# Selkies' RESTART_APP=true handles app respawn - keep VRCX foregrounded so it sees exit
-
-set -euo pipefail
+#!/bin/sh
+# /defaults/autostart - Openbox calls this via `sh` (= dash on Ubuntu)
+# Selkies' RESTART_APP=true handles app respawn
 
 # Clear stale Electron Singleton locks from prior crashes
 find "${HOME}/.config/VRCX" "${HOME}/.cache/VRCX" \

@@ -26,7 +26,8 @@ services:
       # - SELKIES_MANUAL_WIDTH=1920
       # - SELKIES_MANUAL_HEIGHT=1080
     ports:
-      - "3000:3000"
+      - "3000:3000"  # HTTP (only works for localhost - browsers block WebRTC over HTTP from remote IPs)
+      - "3001:3001"  # HTTPS with self-signed cert (use this for LAN/remote access)
     volumes:
       - /mnt/nvme/docker/vrcx:/config
     deploy:
@@ -34,7 +35,7 @@ services:
         limits:
           memory: 4G
     healthcheck:
-      test: ["CMD-SHELL", "timeout 5 bash -c ':> /dev/tcp/127.0.0.1/3000' || exit 1"]
+      test: ["CMD-SHELL", "timeout 5 bash -c ':> /dev/tcp/127.0.0.1/3001' || exit 1"]
       interval: 1m
       timeout: 10s
       retries: 3

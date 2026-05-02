@@ -25,7 +25,9 @@ docker compose pull
 docker compose up -d
 ```
 
-Open `http://<host>:3000` in your browser. VRCX launches in fullscreen Openbox.
+Open `https://<host>:3001` in your browser. Browser will warn about the self-signed cert - click "Advanced" → "Proceed anyway" once and Chrome remembers it. VRCX launches in fullscreen Openbox.
+
+> **Note on HTTP vs HTTPS:** Selkies streams via WebRTC, which browsers only allow in [secure contexts](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts). Port 3000 (HTTP) only works when accessing from `localhost`. For any remote access (LAN included), use port 3001 (HTTPS). If you really want HTTP, run Chrome with `--unsafely-treat-insecure-origin-as-secure="http://<host>:3000"` or put the container behind a reverse proxy with proper TLS.
 
 ## Configuration
 
