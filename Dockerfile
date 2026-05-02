@@ -83,10 +83,10 @@ LABEL org.opencontainers.image.title="VRCX" \
 # intel-media-va-driver-non-free replaces the free 'intel-media-va-driver' that
 # ships in the base image (free version supports decode + very limited encode only;
 # non-free unlocks full HW H264/HEVC encode for Selkies/pixelflux streaming).
-# It lives in 'multiverse' which is enabled via add-apt-repository.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common \
-    && add-apt-repository -y multiverse \
+# We add multiverse as a separate sources.list file - portable across deb822/legacy formats.
+RUN echo "deb http://archive.ubuntu.com/ubuntu noble multiverse" > /etc/apt/sources.list.d/multiverse.list \
+    && echo "deb http://archive.ubuntu.com/ubuntu noble-updates multiverse" >> /etc/apt/sources.list.d/multiverse.list \
+    && echo "deb http://security.ubuntu.com/ubuntu noble-security multiverse" >> /etc/apt/sources.list.d/multiverse.list \
     && apt-get update && apt-get install -y --no-install-recommends \
         libgbm1 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 \
         libcups2t64 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
@@ -94,9 +94,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libexpat1 libxcb1 libx11-6 libxext6 libxtst6 libxi6 \
         libpangocairo-1.0-0 libgtk-3-0t64 libnotify4 libsecret-1-0 \
         ca-certificates \
-        intel-media-va-driver-non-free libva-utils \
-    && apt-get purge -y software-properties-common \
-    && apt-get autoremove -y \
+        intel-media-va-driver-non-free vainfo \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
