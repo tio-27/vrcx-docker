@@ -83,8 +83,10 @@ LABEL org.opencontainers.image.title="VRCX" \
 # intel-media-va-driver-non-free replaces the free 'intel-media-va-driver' that
 # ships in the base image (free version supports decode + very limited encode only;
 # non-free unlocks full HW H264/HEVC encode for Selkies/pixelflux streaming).
-# Requires 'multiverse' repo enabled - it's already in /etc/apt/sources.list on Noble base.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# It lives in 'multiverse' which we enable here - the base only has main+universe.
+RUN sed -i 's/^Components: main universe$/Components: main universe multiverse/' \
+        /etc/apt/sources.list.d/ubuntu.sources \
+    && apt-get update && apt-get install -y --no-install-recommends \
         libgbm1 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 \
         libcups2t64 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
         libxkbcommon0 libxrandr2 libxshmfence1 libnspr4 libdbus-1-3 \
