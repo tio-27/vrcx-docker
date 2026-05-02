@@ -6,53 +6,59 @@ on:
   workflow_dispatch:
     inputs:
       force_rebuild:
-        description: "Force rebuild even if version unchanged"
+        description: "Force rebuild even if VRCX version is unchanged"
         required: false
         default: false
         type: boolean
       vrcx_version:
-        description: "Specific VRCX tag to build (leave empty for latest release)"
+        description: "Specific VRCX tag (e.g. v2026.02.11). Empty = latest release"
         required: false
         default: ""
         type: string
 
+permissions:
+  contents: read
+  packages: write
+
+# Block parallel runs - prevents two concurrent builds racing GHCR
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
+  # GHCR requires lowercase paths; github.repository is already correctly cased here
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   check-and-build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Get latest VRCX release tag
+      - name: Resolve VRCX version
         id: vrcx
         run: |
           OVERRIDE="${{ github.event.inputs.vrcx_version }}"
           if [ -n "$OVERRIDE" ]; then
-            echo "version=$OVERRIDE" >> $GITHUB_OUTPUT
+            echo "version=$OVERRIDE" >> "$GITHUB_OUTPUT"
             echo "Using overridden VRCX version: $OVERRIDE"
             exit 0
           fi
           LATEST=$(curl -fsSL "https://api.github.com/repos/vrcx-team/VRCX/releases/latest" | jq -r '.tag_name')
           if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
-            echo "::error::Failed to fetch VRCX release"
+            echo "::error::Failed to fetch VRCX latest release tag from GitHub API"
             exit 1
           fi
-          echo "version=$LATEST" >> $GITHUB_OUTPUT
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
           echo "Latest VRCX: $LATEST"
 
       - name: Lowercase image name
         id: img
-        run: echo "name=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+        run: echo "name=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
-      - name: Check if tag exists in GHCR
+      - name: Check if version tag exists in GHCR
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -62,7 +68,7 @@ jobs:
           FORCE="${{ github.event.inputs.force_rebuild }}"
 
           if [ "$FORCE" = "true" ]; then
-            echo "needed=true" >> $GITHUB_OUTPUT
+            echo "needed=true" >> "$GITHUB_OUTPUT"
             echo "Force rebuild requested"
             exit 0
           fi
@@ -73,14 +79,14 @@ jobs:
             "https://ghcr.io/v2/${IMAGE}/manifests/${TAG}")
 
           if [ "$STATUS" = "200" ]; then
-            echo "needed=false" >> $GITHUB_OUTPUT
-            echo "Tag $TAG already exists in GHCR (HTTP 200)"
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG already published (HTTP 200) - skipping build"
           else
-            echo "needed=true" >> $GITHUB_OUTPUT
-            echo "Tag $TAG not in GHCR (HTTP $STATUS), build needed"
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG missing (HTTP $STATUS) - build needed"
           fi
 
-      - name: Free up disk space
+      - name: Free disk space
         if: steps.check.outputs.needed == 'true'
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
@@ -99,6 +105,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate image metadata
+        if: steps.check.outputs.needed == 'true'
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ steps.img.outputs.name }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.vrcx.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=VRCX
+            org.opencontainers.image.description=VRChat companion app, browser-accessible via Selkies WebRTC
+            org.opencontainers.image.version=${{ steps.vrcx.outputs.version }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=MIT
+
       - name: Build and push
         if: steps.check.outputs.needed == 'true'
         uses: docker/build-push-action@v7
@@ -108,9 +130,8 @@ jobs:
           platforms: linux/amd64
           build-args: |
             VRCX_REF=${{ steps.vrcx.outputs.version }}
-          tags: |
-            ${{ env.REGISTRY }}/${{ steps.img.outputs.name }}:latest
-            ${{ env.REGISTRY }}/${{ steps.img.outputs.name }}:${{ steps.vrcx.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false

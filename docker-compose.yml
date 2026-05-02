@@ -1,6 +1,6 @@
 services:
   vrcx:
-    image: ghcr.io/YOUR_GITHUB_USERNAME/vrcx-docker:latest
+    image: ghcr.io/tio-27/vrcx-docker:latest
     container_name: vrcx
     hostname: vrcx
     restart: unless-stopped
@@ -13,10 +13,16 @@ services:
       - TZ=Europe/Berlin
       - TITLE=VRCX
       - NO_DECOR=true
-      # Auth deaktiviert (LAN) - keine PASSWORD setzen
+      # Selkies built-in watchdog - restarts VRCX if it exits
+      - RESTART_APP=true
+      # Single-app hardening: disables sudo/terminals/file-transfer in UI
+      - HARDEN_DESKTOP=true
+      # Clamp virtual display from default 16k - saves RAM/bandwidth
+      - MAX_RES=1920x1080
+      # LAN-only, no auth. To enable auth set BOTH:
       # - CUSTOM_USER=admin
       # - PASSWORD=changeme
-      # Resolution Override (optional)
+      # Lock resolution (optional - browser cannot resize when set):
       # - SELKIES_MANUAL_WIDTH=1920
       # - SELKIES_MANUAL_HEIGHT=1080
     ports:
@@ -28,8 +34,8 @@ services:
         limits:
           memory: 4G
     healthcheck:
-      test: ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/3000' || exit 1"]
+      test: ["CMD-SHELL", "timeout 5 bash -c ':> /dev/tcp/127.0.0.1/3000' || exit 1"]
       interval: 1m
-      timeout: 5s
+      timeout: 10s
       retries: 3
-      start_period: 60s
+      start_period: 90s
