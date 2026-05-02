@@ -83,15 +83,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxkbcommon0 libxrandr2 libxshmfence1 libnspr4 libdbus-1-3 \
         libexpat1 libxcb1 libx11-6 libxext6 libxtst6 libxi6 \
         libpangocairo-1.0-0 libgtk-3-0t64 libnotify4 libsecret-1-0 \
-        ca-certificates gnupg \
+        ca-certificates gnupg curl \
     && install -d -m 0755 /etc/apt/keyrings \
-    && gpg --no-default-keyring --keyring /etc/apt/keyrings/dotnet-backports.gpg \
-        --keyserver keyserver.ubuntu.com --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF \
+    && curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF" \
+        | gpg --dearmor -o /etc/apt/keyrings/dotnet-backports.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/dotnet-backports.gpg] https://ppa.launchpadcontent.net/dotnet/backports/ubuntu noble main" \
         > /etc/apt/sources.list.d/dotnet-backports.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends dotnet-runtime-9.0 \
-    && apt-get purge -y gnupg \
+    && apt-get purge -y gnupg curl \
     && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
