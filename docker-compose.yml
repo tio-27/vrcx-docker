@@ -29,7 +29,17 @@ services:
       - "3000:3000"  # HTTP (only works for localhost - browsers block WebRTC over HTTP from remote IPs)
       - "3001:3001"  # HTTPS with self-signed cert (use this for LAN/remote access)
     volumes:
-      - /mnt/nvme/docker/vrcx:/config
+      - /path/to/vrcx:/config
+    # Hardware-accelerated stream encoding via Intel iGPU (Quick Sync).
+    # Reduces CPU load from ~20-30% to ~5% for Selkies WebRTC stream.
+    # Find your render group GID on the host: `ls -ln /dev/dri/renderD128` (3rd column)
+    # Image already includes intel-media-va-driver-non-free for full encode support.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # group_add:
+    #   - "107"   # <-- replace with your host's render group GID
+    # environment additionally needs:
+    #   - DRI_NODE=/dev/dri/renderD128
     deploy:
       resources:
         limits:

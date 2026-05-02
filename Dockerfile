@@ -75,10 +75,15 @@ LABEL org.opencontainers.image.title="VRCX" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="${VRCX_REF}"
 
-# Electron runtime libs only.
+# Electron runtime libs + Intel VAAPI non-free driver.
 # .NET 9 runtime is bundled inside VRCX itself (see download-dotnet-runtime.js
 # in the builder stage). No need for a system-wide dotnet-runtime-9.0 package,
 # which avoids dealing with Canonical's flaky dotnet/backports PPA on Noble.
+#
+# intel-media-va-driver-non-free replaces the free 'intel-media-va-driver' that
+# ships in the base image (free version supports decode + very limited encode only;
+# non-free unlocks full HW H264/HEVC encode for Selkies/pixelflux streaming).
+# Requires 'multiverse' repo enabled - it's already in /etc/apt/sources.list on Noble base.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgbm1 libnss3 libasound2t64 libatk1.0-0t64 libatk-bridge2.0-0t64 \
         libcups2t64 libdrm2 libxcomposite1 libxdamage1 libxfixes3 \
@@ -86,6 +91,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libexpat1 libxcb1 libx11-6 libxext6 libxtst6 libxi6 \
         libpangocairo-1.0-0 libgtk-3-0t64 libnotify4 libsecret-1-0 \
         ca-certificates \
+        intel-media-va-driver-non-free libva-utils \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
