@@ -74,25 +74,47 @@ ENV TITLE=VRCX \
     NO_DECOR=true \
     PIXELFLUX_WAYLAND=true
 
-# Runtime deps:
-# - chromium pulls in the full set of correctly-versioned Electron runtime libs
-#   (libnss3, libgtk, libatk, libxkbcommon, ICU, etc.) - much more reliable than
-#   maintaining a hand-curated list across Ubuntu time_t / package-rename churn.
-# - intel-media-va-driver-non-free replaces the free intel-media-va-driver from
-#   the base. The non-free variant unlocks H264/HEVC encode entrypoints needed
-#   for the QSV/VAAPI zero-copy stream pipeline.
+# Runtime deps for Electron 38 on Ubuntu Noble:
+# - electron-builder's documented base deps, adjusted for Noble's t64
+#   package renames (time_t ABI migration).
+# - intel-media-va-driver-non-free unlocks H264/HEVC encode entrypoints
+#   needed for the QSV/VAAPI zero-copy stream pipeline.
 # - vainfo for the verification step in README/MIGRATION docs.
 #
-# multiverse is enabled via add-apt-repository which handles deb822-format
-# sources.list correctly on Ubuntu Noble.
+# multiverse is enabled for intel-media-va-driver-non-free via
+# add-apt-repository which handles Noble's deb822 sources correctly.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         software-properties-common \
     && add-apt-repository -y multiverse \
     && apt-get update && apt-get install -y --no-install-recommends \
-        chromium \
-        chromium-l10n \
         intel-media-va-driver-non-free \
         vainfo \
+        libgtk-3-0t64 \
+        libnotify4 \
+        libnss3 \
+        libxss1 \
+        libxtst6 \
+        libatspi2.0-0t64 \
+        libuuid1 \
+        libsecret-1-0 \
+        libasound2t64 \
+        libcups2t64 \
+        libdrm2 \
+        libgbm1 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxrandr2 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxshmfence1 \
+        libnspr4 \
+        libdbus-1-3 \
+        libexpat1 \
+        libpangocairo-1.0-0 \
+        libcurl4t64 \
+        xdg-utils \
+        fonts-liberation \
+        fonts-noto-color-emoji \
     && apt-get purge -y software-properties-common \
     && apt-get autoremove -y \
     && apt-get clean \
