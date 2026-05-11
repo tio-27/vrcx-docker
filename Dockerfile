@@ -81,11 +81,15 @@ ENV TITLE=VRCX \
 #   needed for the QSV/VAAPI zero-copy stream pipeline.
 # - vainfo for the verification step in README/MIGRATION docs.
 #
-# multiverse is enabled for intel-media-va-driver-non-free via
-# add-apt-repository which handles Noble's deb822 sources correctly.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        software-properties-common \
-    && add-apt-repository -y multiverse \
+# multiverse is enabled by patching the deb822-format ubuntu.sources file
+# in place. This avoids software-properties-common which would drag
+# python3-distro into autoremove territory and break Selkies's input handler.
+# Stock Noble already has multiverse enabled; the sed is idempotent and a
+# no-op in that case. LSIO's baseimage strips some components, so the patch
+# is needed there.
+RUN if ! grep -q "Components:.*multiverse" /etc/apt/sources.list.d/ubuntu.sources; then \
+        sed -i '/^Components:/ s/$/ multiverse/' /etc/apt/sources.list.d/ubuntu.sources; \
+    fi \
     && apt-get update && apt-get install -y --no-install-recommends \
         intel-media-va-driver-non-free \
         vainfo \
@@ -115,8 +119,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         xdg-utils \
         fonts-liberation \
         fonts-noto-color-emoji \
-    && apt-get purge -y software-properties-common \
-    && apt-get autoremove -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
