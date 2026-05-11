@@ -11,35 +11,33 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Berlin
-      - TITLE=VRCX
-      - NO_DECOR=true
-      # Selkies built-in watchdog - restarts VRCX if it exits
+      # Wayland mode + zero-copy encoding settings.
+      # PIXELFLUX_WAYLAND=true is set as image default (in Dockerfile);
+      # uncomment below only to force-disable: - PIXELFLUX_WAYLAND=false
+      #
+      # DRINODE/DRI_NODE = same render node = zero-copy dmabuf path.
+      # Adjust if your host has multiple GPUs (e.g. /dev/dri/renderD129).
+      - DRINODE=/dev/dri/renderD128
+      - DRI_NODE=/dev/dri/renderD128
+      # Selkies built-in watchdog
       - RESTART_APP=true
-      # Single-app hardening: disables sudo/terminals/file-transfer in UI
+      # Single-app hardening: disables sudo/terminals/file-transfer
       - HARDEN_DESKTOP=true
-      # Clamp virtual display from default 16k - saves RAM/bandwidth
-      - MAX_RES=1920x1080
-      # LAN-only, no auth. To enable auth set BOTH:
+      # LAN-only, no auth. To enable HTTP basic auth, set both:
       # - CUSTOM_USER=admin
       # - PASSWORD=changeme
-      # Lock resolution (optional - browser cannot resize when set):
+      # Optional: lock to fixed resolution and hide the picker
       # - SELKIES_MANUAL_WIDTH=1920
       # - SELKIES_MANUAL_HEIGHT=1080
     ports:
-      - "3000:3000"  # HTTP (only works for localhost - browsers block WebRTC over HTTP from remote IPs)
-      - "3001:3001"  # HTTPS with self-signed cert (use this for LAN/remote access)
+      - "3000:3000"  # HTTP - localhost only (browsers block WebRTC over plain HTTP from remote)
+      - "3001:3001"  # HTTPS w/ self-signed cert - use this for LAN/remote
     volumes:
-      - /path/to/vrcx:/config
-    # Hardware-accelerated stream encoding via Intel iGPU (Quick Sync).
-    # Reduces CPU load from ~20-30% to ~5% for Selkies WebRTC stream.
-    # Find your render group GID on the host: `ls -ln /dev/dri/renderD128` (3rd column)
-    # Image already includes intel-media-va-driver-non-free for full encode support.
-    # devices:
-    #   - /dev/dri:/dev/dri
-    # group_add:
-    #   - "107"   # <-- replace with your host's render group GID
-    # environment additionally needs:
-    #   - DRI_NODE=/dev/dri/renderD128
+      - /mnt/nvme/docker/vrcx:/config
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "107"   # render group GID on TrueNAS Scale - check: ls -ln /dev/dri/renderD128
     deploy:
       resources:
         limits:

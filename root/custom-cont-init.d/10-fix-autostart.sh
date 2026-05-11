@@ -1,8 +1,12 @@
 #!/usr/bin/with-contenv bash
-# Force-sync /defaults/autostart to user config with exec bit on every boot.
-# Selkies' init-config copies but loses exec permission, so we fix it here.
+# Defensive copy of /defaults/autostart with exec bit to both possible
+# compositor config dirs. Modern baseimage-selkies with RESTART_APP=true
+# manages this itself, but keeping it as belt-and-suspenders protects
+# against edge cases where /config volume init drops the exec bit.
 
-mkdir -p /config/.config/openbox
-cp -f /defaults/autostart /config/.config/openbox/autostart
-chmod +x /config/.config/openbox/autostart
-chown abc:abc /config/.config/openbox/autostart
+for sub in openbox labwc; do
+    mkdir -p "/config/.config/${sub}"
+    cp -f /defaults/autostart "/config/.config/${sub}/autostart"
+    chmod +x "/config/.config/${sub}/autostart"
+    chown abc:abc "/config/.config/${sub}/autostart"
+done
